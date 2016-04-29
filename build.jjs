@@ -1,0 +1,30 @@
+#!/usr/local/bin/jjs -fv -scripting
+
+var Path = Packages.java.nio.file.Path;
+var FileSystems = Packages.java.nio.file.FileSystems;
+var Files = Packages.java.nio.file.Files;
+var OpenOption = Packages.java.nio.file.StandardOpenOption;
+var Charset = Packages.java.nio.charset.Charset;
+
+function getPath(path) {
+    return FileSystems.getDefault().getPath(path);         
+};
+
+
+var script = '#!/bin/sh\nDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )\nexec java -classpath "$DIR/../jars/*"  -jar $0 "$@"\n\n\n'
+
+print("run maven");
+print(`mvn compile assembly:single install package`)
+
+
+Files.write(
+    getPath('target/selenium-nashorn'),
+    script.getBytes(Charset.forName("UTF-8")));
+Files.write(
+    getPath('target/selenium-nashorn'),
+    Files.readAllBytes(getPath('target/selenium-nashorn-1.0-jar-with-dependencies.jar')),
+    OpenOption.APPEND);
+    
+
+#print(`cat target/selenium-nashorn-1.0-jar-with-dependencies.jar >> target/selenium-nashorn`);
+print(`chmod 700 target/selenium-nashorn`)
