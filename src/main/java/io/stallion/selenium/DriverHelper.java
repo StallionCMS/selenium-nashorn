@@ -24,6 +24,38 @@ public class DriverHelper {
         return counts;
     }
 
+    public void waitNotExists(String selector) {
+        for(int x: range(defaultTimeout)) {
+            List<WebElement> eles = driver.findElements(By.cssSelector(selector));
+            if (eles.size() == 0) {
+                return;
+            }
+            sleep();
+        }
+        throw new AssertionError("Selector still exists:" + selector);
+    }
+
+    public void waitExists(String selector) {
+        for(int x: range(defaultTimeout)) {
+            List<WebElement> eles = driver.findElements(By.cssSelector(selector));
+            if (eles.size() > 0) {
+                return;
+            }
+            sleep();
+        }
+        throw new AssertionError("Selector still exists:" + selector);
+    }
+
+    public void waitTextExists(String selector, String text) {
+        for(int x: range(defaultTimeout)) {
+            if (driver.findElement(By.cssSelector(selector)).getText().contains(text)) {
+                return;
+            };
+            sleep();
+        }
+        throw new AssertionError("Text was not found with selector:" + selector + " text:" + text);
+    }
+
     public void waitTrue(Function<Object, Boolean> func) {
         for(int x: range(defaultTimeout)) {
             boolean result = func.apply(this);
