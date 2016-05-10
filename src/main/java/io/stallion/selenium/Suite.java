@@ -10,7 +10,11 @@ import java.util.List;
 public class Suite {
     private JSObject before = null;
     private JSObject after = null;
-    private List<JSObject> tests = new ArrayList<>();
+    private JSObject beforeSuite = null;
+    private JSObject afterSuite = null;
+
+    private List<TestFunction> tests = new ArrayList<>();
+    private String name = "";
 
     public JSObject getBefore() {
         return before;
@@ -30,12 +34,39 @@ public class Suite {
         return this;
     }
 
-    public List<JSObject> getTests() {
+    public List<TestFunction> getTests() {
         return tests;
     }
 
-    public Suite setTests(List<JSObject> tests) {
+    public Suite setTests(List<TestFunction> tests) {
         this.tests = tests;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Suite setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public JSObject getBeforeSuite() {
+        return beforeSuite;
+    }
+
+    public Suite setBeforeSuite(JSObject beforeSuite) {
+        this.beforeSuite = beforeSuite;
+        return this;
+    }
+
+    public JSObject getAfterSuite() {
+        return afterSuite;
+    }
+
+    public Suite setAfterSuite(JSObject afterSuite) {
+        this.afterSuite = afterSuite;
         return this;
     }
 }

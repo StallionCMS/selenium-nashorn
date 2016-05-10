@@ -54,7 +54,7 @@ public class MainRunner {
         }
 
         DriverHelper helper = new DriverHelper(driver);
-
+        helper.setBaseUrl(options.getBaseUrl());
         SeleniumContext context = new SeleniumContext()
                 .setHelper(helper)
                 .setDriver(driver)
@@ -65,11 +65,13 @@ public class MainRunner {
 
         String[] argArray = new String[options.getArguments().size()];
         argArray = options.getArguments().toArray(argArray);
+        int result = 1;
         try {
-            JavascriptShell.main(argArray, context);
+            result = JavascriptShell.main(argArray, context, options);
         } finally {
             driver.quit();
         }
+        System.exit(result);
 
 
     }

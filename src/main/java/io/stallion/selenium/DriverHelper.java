@@ -7,6 +7,7 @@ import org.openqa.selenium.WebElement;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 
@@ -14,6 +15,42 @@ public class DriverHelper {
     private WebDriver driver;
     private int sleepTime = 10;
     private int defaultTimeout = 5000;
+    private String baseUrl = "";
+
+    public void assertTrue(boolean condition, String message) {
+        if (!condition) {
+            throw new AssertionError(message);
+        }
+    }
+
+    public void assertHasText(String selector, String text) {
+        assertHasText(driver.findElement(By.cssSelector(selector)), text);
+    }
+
+    public void assertNotHasText(String selector, String text) {
+        assertNotHasText(driver.findElement(By.cssSelector(selector)), text);
+    }
+
+    public void assertHasHtml(String selector, String text) {
+        assertHasHtml(driver.findElement(By.cssSelector(selector)), text);
+    }
+
+    public void assertHasText(WebElement ele, String text) {
+        String actual = ele.getText();
+        assertTrue(actual.indexOf(text) > -1, "Text not found. Text actual: \n" + actual + "\n\nText expected:\n" + text);
+    }
+
+    public void assertNotHasText(WebElement ele, String text) {
+        String actual = ele.getText();
+        assertTrue(actual.indexOf(text) == -1, "Text found when not supposed to exist. Text actual: \n" + actual + "\n\nUnexpected text:\n" + text);
+    }
+
+
+    public void assertHasHtml(WebElement ele, String text) {
+        String actual = ele.getAttribute("innerHTML");
+        assertTrue(actual.indexOf(text) > -1, "HTML not found. HTML actual: \n" + actual + "\n\nHTML expected:\n" + text);
+    }
+
 
     private List<Integer> range(int timeout) {
         List<Integer> counts = new ArrayList<>();
@@ -24,26 +61,51 @@ public class DriverHelper {
         return counts;
     }
 
-    public void waitNotExists(String selector) {
-        for(int x: range(defaultTimeout)) {
+    public boolean exists(String selector) {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.MILLISECONDS);
+        try {
             List<WebElement> eles = driver.findElements(By.cssSelector(selector));
-            if (eles.size() == 0) {
-                return;
+            if (eles.size() > 0) {
+                return true;
+            } else {
+                return false;
             }
-            sleep();
+        } finally {
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        }
+    }
+
+    public void waitNotExists(String selector) {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.MILLISECONDS);
+        try {
+            for (int x : range(defaultTimeout)) {
+                List<WebElement> eles = driver.findElements(By.cssSelector(selector));
+                if (eles.size() == 0) {
+                    return;
+                }
+                sleep();
+            }
+        } finally {
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
         }
         throw new AssertionError("Selector still exists:" + selector);
     }
 
     public void waitExists(String selector) {
-        for(int x: range(defaultTimeout)) {
-            List<WebElement> eles = driver.findElements(By.cssSelector(selector));
-            if (eles.size() > 0) {
-                return;
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.MILLISECONDS);
+        try {
+
+            for (int x : range(defaultTimeout)) {
+                List<WebElement> eles = driver.findElements(By.cssSelector(selector));
+                if (eles.size() > 0) {
+                    return;
+                }
+                sleep();
             }
-            sleep();
+            throw new AssertionError("Selector still exists:" + selector);
+        } finally {
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
         }
-        throw new AssertionError("Selector still exists:" + selector);
     }
 
     public void waitTextExists(String selector, String text) {
@@ -105,19 +167,14 @@ public class DriverHelper {
         }
     }
 
-    public WebElement findAll(String selector, int timeout) {
-        return null;
+
+
+    public String getBaseUrl() {
+        return baseUrl;
     }
 
-    public WebElement assertExists(String selector, int timeout) {
-        return null;
+    public DriverHelper setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+        return this;
     }
-
-    public WebElement assertTextExists(String selector, String text, int timeout) {
-        return null;
-    }
-
-
-
-
 }

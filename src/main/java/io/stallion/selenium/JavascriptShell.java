@@ -29,28 +29,29 @@ public class JavascriptShell {
     public static final int RUNTIME_ERROR = 102;
     public static final int IO_ERROR = 103;
     public static final int INTERNAL_ERROR = 104;
+    private CommandOptions options;
+    private SeleniumContext seleniumContext;
 
-    protected JavascriptShell() {
+    protected JavascriptShell(SeleniumContext context, CommandOptions options) {
+        this.seleniumContext = context;
+        this.options = options;
     }
 
-    public static void main(String[] args, SeleniumContext seleniumContext) {
+    public static int main(String[] args, SeleniumContext seleniumContext, CommandOptions options) {
         try {
-            int e = main(System.in, System.out, System.err, args, seleniumContext);
-            if(e != 0) {
-                System.exit(e);
-            }
+            return main(System.in, System.out, System.err, args, seleniumContext, options);
         } catch (IOException var2) {
             System.err.println(var2);
-            System.exit(103);
+            return 103;
         }
 
     }
 
-    public static int main(InputStream in, OutputStream out, OutputStream err, String[] args, SeleniumContext seleniumContext) throws IOException {
-        return (new JavascriptShell()).run(in, out, err, args, seleniumContext);
+    public static int main(InputStream in, OutputStream out, OutputStream err, String[] args, SeleniumContext seleniumContext, CommandOptions options) throws IOException {
+        return (new JavascriptShell(seleniumContext, options)).run(in, out, err, args);
     }
 
-    protected final int run(InputStream in, OutputStream out, OutputStream err, String[] args, SeleniumContext seleniumContext) throws IOException {
+    protected final int run(InputStream in, OutputStream out, OutputStream err, String[] args) throws IOException {
         Context context = makeContext(in, out, err, args);
         if(context == null) {
             return 100;
@@ -58,7 +59,7 @@ public class JavascriptShell {
             Global global = context.createGlobal();
             ScriptEnvironment env = context.getEnv();
             List files = env.getFiles();
-            return files.isEmpty()?readEvalPrint(context, global):(env._compile_only?compileScripts(context, global, files):(env._fx?runFXScripts(context, global, files):this.runScripts(context, global, files, seleniumContext)));
+            return files.isEmpty()?readEvalPrint(context, global):(env._compile_only?compileScripts(context, global, files):(env._fx?runFXScripts(context, global, files):this.runScripts(context, global, files)));
         }
     }
 
@@ -180,7 +181,7 @@ public class JavascriptShell {
         }
     }
 
-    private int runScripts(Context context, Global global, List<String> files, SeleniumContext seleniumContext) throws IOException {
+    private int runScripts(Context context, Global global, List<String> files) throws IOException {
         Global oldGlobal = Context.getGlobal();
         boolean globalChanged = oldGlobal != global;
 
@@ -190,7 +191,8 @@ public class JavascriptShell {
             }
 
             global.put("SeleniumContext", seleniumContext, true);
-            global.put("runner", new SeleniumRunner(seleniumContext), true);
+            SeleniumRunner runner = new SeleniumRunner(seleniumContext, options.getTests());
+            global.put("runner", runner, true);
             global.put("lineReader", new LineReader(), true);
             ErrorManager errors = context.getErrorManager();
             Iterator var7 = files.iterator();
@@ -229,9 +231,14 @@ public class JavascriptShell {
                     }
                 }
             }
-
-            return 0;
+            runner.printResults();
+            if (runner.anyFailed) {
+                return 1;
+            } else {
+                return 0;
+            }
         } finally {
+
             context.getOut().flush();
             context.getErr().flush();
             if(globalChanged) {
