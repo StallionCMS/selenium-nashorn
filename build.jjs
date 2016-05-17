@@ -28,3 +28,4 @@ Files.write(
 
 #print(`cat target/selenium-nashorn-1.0-jar-with-dependencies.jar >> target/selenium-nashorn`);
 print(`chmod 700 target/selenium-nashorn`)
+print(`cp target/selenium-nashorn /usr/local/bin/selenium-nashorn`)
