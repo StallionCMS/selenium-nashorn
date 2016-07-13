@@ -102,7 +102,7 @@ public class DriverHelper {
                 }
                 sleep();
             }
-            throw new AssertionError("Selector still exists:" + selector);
+            throw new AssertionError("Selector does not exist:" + selector);
         } finally {
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
         }
