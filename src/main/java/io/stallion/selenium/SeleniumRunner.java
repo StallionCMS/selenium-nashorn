@@ -111,45 +111,61 @@ public class SeleniumRunner {
     }
 
     private void execFunction(String suiteName, TestFunction testFunction) {
-        try {
-            testFunction.getFunc().call(this, context.getDriver(), context.getHelper());
-            successCount++;
-            succeeded.add(suiteName + "." + testFunction.getName());
-        } catch (AssertionError e) {
-            String execMessage = e.getMessage();
-            String msg = "AssertionError running " + suiteName + "." + testFunction.getName() + ":" + e.getMessage();
-            System.err.println(msg);
-            int i = msg.indexOf("\n");
-            if (i == -1) {
-                i = msg.length();
+        int maxRuns = 1;
+        if (context.getOptions().isAutoRetry()) {
+            maxRuns = 2;
+        }
+        boolean lastRun = true;
+        for (int x = 0; x < maxRuns; x++) {
+            if ((x + 1) < maxRuns) {
+                lastRun = false;
             }
-            if (i > 120) {
-                i = 120;
+            try {
+                testFunction.getFunc().call(this, context.getDriver(), context.getHelper());
+                successCount++;
+                succeeded.add(suiteName + "." + testFunction.getName());
+                break;
+            } catch (AssertionError e) {
+                String execMessage = e.getMessage();
+                String msg = "AssertionError running " + suiteName + "." + testFunction.getName() + ":" + e.getMessage();
+                System.err.println(msg);
+                ExceptionUtils.printRootCauseStackTrace(e);
+                int i = msg.indexOf("\n");
+                if (i == -1) {
+                    i = msg.length();
+                }
+                if (i > 120) {
+                    i = 120;
+                }
+                msg = msg.substring(0, i);
+                if (lastRun) {
+                    errors.add(new TestError()
+                            .setAssertError(true)
+                            .setMsg(msg)
+                            .setSuite(suiteName)
+                            .setTest(testFunction.getName()));
+                }
+            } catch (Exception e) {
+                String msg = e.toString() + " running " + suiteName + "." + testFunction.getName() + ":" + e.getMessage();
+                int i = msg.indexOf("\n");
+                if (i == -1) {
+                    i = msg.length();
+                }
+                if (i > 120) {
+                    i = 120;
+                }
+                msg = msg.substring(0, i);
+                System.err.println(msg);
+                ExceptionUtils.printRootCauseStackTrace(e);
+                if (lastRun) {
+                    errors.add(new TestError()
+                            .setAssertError(true)
+                            .setMsg(msg)
+                            .setSuite(suiteName)
+                            .setTest(testFunction.getName()));
+                }
+
             }
-            msg = msg.substring(0, i);
-            errors.add(new TestError()
-                    .setAssertError(true)
-                    .setMsg(msg)
-                    .setSuite(suiteName)
-                    .setTest(testFunction.getName()));
-            ExceptionUtils.printRootCauseStackTrace(e);
-        } catch (Exception e) {
-            String msg = e.toString() + " running " + suiteName + "." + testFunction.getName() + ":" + e.getMessage();
-            int i = msg.indexOf("\n");
-            if (i == -1) {
-                i = msg.length();
-            }
-            if (i > 120) {
-                i = 120;
-            }
-            msg = msg.substring(0, i);
-            System.err.println(msg);
-            errors.add(new TestError()
-                    .setAssertError(true)
-                    .setMsg(msg)
-                    .setSuite(suiteName)
-                    .setTest(testFunction.getName()));
-            ExceptionUtils.printRootCauseStackTrace(e);
         }
     }
 }
