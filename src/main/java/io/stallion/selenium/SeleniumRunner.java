@@ -1,6 +1,7 @@
 package io.stallion.selenium;
 
 import jdk.nashorn.api.scripting.JSObject;
+import jline.internal.Log;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.util.ArrayList;
@@ -45,8 +46,10 @@ public class SeleniumRunner {
                 continue;
             } else if ("beforeSuite".equals(name)) {
                 suite.setBeforeSuite((JSObject) o.getMember(name));
+                continue;
             } else if ("afterSuite".equals(name)) {
                 suite.setBeforeSuite((JSObject) o.getMember(name));
+                continue;
             } else if (!name.startsWith("test")) {
                 continue;
             }
@@ -66,27 +69,75 @@ public class SeleniumRunner {
                     continue;
                 }
             }
-            if (suite.getBeforeSuite() != null) {
-                suite.getBeforeSuite().call(this, context.getDriver(), context.getHelper());
+            try {
+                if (suite.getBeforeSuite() != null) {
+                    suite.getBeforeSuite().call(this, context.getDriver(), context.getHelper());
+                }
+            } catch (Exception e) {
+                Log.error("Error running beforeSuite for " + suite.getName());
+                ExceptionUtils.printRootCauseStackTrace(e);
+                if (!context.getOptions().isAutoRetry()) {
+                    errors.add(new TestError()
+                            .setAssertError(true)
+                            .setMsg(e.getMessage())
+                            .setSuite(suite.getName())
+                            .setTest("afterSuite"));
+                    continue;
+                } else {
+                    try {
+                        Log.info("Retry beforeSuite for " + suite.getName());
+                        suite.getBeforeSuite().call(this, context.getDriver(), context.getHelper());
+                    } catch (Exception e2) {
+                        ExceptionUtils.printRootCauseStackTrace(e2);
+                        errors.add(new TestError()
+                                .setAssertError(true)
+                                .setMsg(e2.getMessage())
+                                .setSuite(suite.getName())
+                                .setTest("beforeSuite"));
+                        continue;
+                    }
+                }
+
             }
+
             for (TestFunction testFunction :suite.getTests()) {
                 if (!"".equals(testName)) {
                     if (!testName.equals(testFunction.getName())) {
                         continue;
                     }
                 }
-                if (suite.getBefore() != null) {
-                    suite.getBefore().call(this, context.getDriver(), context.getHelper());
+                execTestWithRetry(testFunction, suite);
+            }
+            try {
+                if (suite.getAfterSuite() != null) {
+                    suite.getAfterSuite().call(this, context.getDriver(), context.getHelper());
                 }
-                execFunction(suite.getName(), testFunction);
-                if (suite.getAfter() != null) {
-                    suite.getAfter().call(this, context.getDriver(), context.getHelper());
+            } catch (Exception e) {
+                Log.error("Error running afterSuite for " + suite.getName());
+                ExceptionUtils.printRootCauseStackTrace(e);
+                if (!context.getOptions().isAutoRetry()) {
+                    errors.add(new TestError()
+                            .setAssertError(true)
+                            .setMsg(e.getMessage())
+                            .setSuite(suite.getName())
+                            .setTest("afterSuite"));
+                    continue;
+                } else {
+                    try {
+                        Log.info("Retrying afterSuite for " + suite.getName());
+                        suite.getAfterSuite().call(this, context.getDriver(), context.getHelper());
+                    } catch (Exception e2) {
+                        ExceptionUtils.printRootCauseStackTrace(e2);
+                        errors.add(new TestError()
+                                .setAssertError(true)
+                                .setMsg(e2.getMessage())
+                                .setSuite(suite.getName())
+                                .setTest("afterSuite"));
+                        continue;
+                    }
                 }
+            }
 
-            }
-            if (suite.getAfterSuite() != null) {
-                suite.getAfterSuite().call(this, context.getDriver(), context.getHelper());
-            }
         }
         if (errors.size() > 0) {
             anyFailed = true;
@@ -110,23 +161,36 @@ public class SeleniumRunner {
 
     }
 
-    private void execFunction(String suiteName, TestFunction testFunction) {
+    private void execTestWithRetry(TestFunction testFunction, Suite suite) {
         int maxRuns = 1;
         if (context.getOptions().isAutoRetry()) {
             maxRuns = 2;
         }
-        boolean lastRun = true;
+        boolean isLastRun = true;
         for (int x = 0; x < maxRuns; x++) {
             if ((x + 1) < maxRuns) {
-                lastRun = false;
+                isLastRun = false;
+            } else {
+                isLastRun = true;
+            }
+            if (x > 0) {
+                System.err.println("Test failed first time, retrying: " + suiteName + ":" + testFunction.getName());
             }
             try {
+                if (suite.getBefore() != null) {
+                    suite.getBefore().call(this, context.getDriver(), context.getHelper());
+                }
+
                 testFunction.getFunc().call(this, context.getDriver(), context.getHelper());
+
+                if (suite.getAfter() != null) {
+                    suite.getAfter().call(this, context.getDriver(), context.getHelper());
+                }
                 successCount++;
-                succeeded.add(suiteName + "." + testFunction.getName());
+                succeeded.add(suite.getName() + "." + testFunction.getName());
                 break;
+
             } catch (AssertionError e) {
-                String execMessage = e.getMessage();
                 String msg = "AssertionError running " + suiteName + "." + testFunction.getName() + ":" + e.getMessage();
                 System.err.println(msg);
                 ExceptionUtils.printRootCauseStackTrace(e);
@@ -138,11 +202,11 @@ public class SeleniumRunner {
                     i = 120;
                 }
                 msg = msg.substring(0, i);
-                if (lastRun) {
+                if (isLastRun) {
                     errors.add(new TestError()
                             .setAssertError(true)
                             .setMsg(msg)
-                            .setSuite(suiteName)
+                            .setSuite(suite.getName())
                             .setTest(testFunction.getName()));
                 }
             } catch (Exception e) {
@@ -157,15 +221,17 @@ public class SeleniumRunner {
                 msg = msg.substring(0, i);
                 System.err.println(msg);
                 ExceptionUtils.printRootCauseStackTrace(e);
-                if (lastRun) {
+                if (isLastRun) {
                     errors.add(new TestError()
                             .setAssertError(true)
                             .setMsg(msg)
-                            .setSuite(suiteName)
+                            .setSuite(suite.getName())
                             .setTest(testFunction.getName()));
                 }
 
             }
         }
+
     }
+
 }
