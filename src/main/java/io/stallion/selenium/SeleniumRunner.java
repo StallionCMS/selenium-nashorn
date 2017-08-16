@@ -223,7 +223,7 @@ public class SeleniumRunner {
                 ExceptionUtils.printRootCauseStackTrace(e);
                 if (isLastRun) {
                     errors.add(new TestError()
-                            .setAssertError(true)
+                            .setAssertError(false)
                             .setMsg(msg)
                             .setSuite(suite.getName())
                             .setTest(testFunction.getName()));
