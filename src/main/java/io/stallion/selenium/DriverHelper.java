@@ -1,9 +1,7 @@
 package io.stallion.selenium;
 
 import com.thoughtworks.selenium.SeleniumException;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,6 +88,60 @@ public class DriverHelper {
         }
         throw new AssertionError("Selector still exists:" + selector);
     }
+
+    public void waitVisible(String selector) {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.MILLISECONDS);
+        try {
+
+            for (int x : range(defaultTimeout)) {
+                List<WebElement> eles = driver.findElements(By.cssSelector(selector));
+                if (eles.size() > 0) {
+                    if (eles.get(0).isDisplayed()) {
+                        return;
+                    }
+
+                }
+                sleep();
+            }
+            throw new AssertionError("Selector not displayed:" + selector);
+        } finally {
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        }
+    }
+
+    public WebElement getParent(WebElement ele) {
+        return ele.findElement(By.xpath(".."));
+    }
+
+    public WebElement getParentBySelector(WebElement ele, String selector) {
+        return (WebElement)((JavascriptExecutor)driver).executeScript("return arguments[0].closest(arguments[1])", ele, selector);
+    }
+
+    public void waitNotVisible(String selector) {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.MILLISECONDS);
+        try {
+
+            for (int x : range(defaultTimeout)) {
+                List<WebElement> eles = driver.findElements(By.cssSelector(selector));
+                if (eles.size() == 0) {
+                    return;
+                } else {
+                    try {
+                        if (!eles.get(0).isDisplayed()) {
+                            return;
+                        }
+                    } catch (StaleElementReferenceException ex) {
+                        return;
+                    }
+                }
+                sleep();
+            }
+            throw new AssertionError("Selector still displayed:" + selector);
+        } finally {
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        }
+    }
+
 
     public void waitExists(String selector) {
         driver.manage().timeouts().implicitlyWait(1, TimeUnit.MILLISECONDS);

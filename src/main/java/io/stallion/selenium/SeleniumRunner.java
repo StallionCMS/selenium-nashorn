@@ -201,7 +201,7 @@ public class SeleniumRunner {
                 if (i > 120) {
                     i = 120;
                 }
-                msg = msg.substring(0, i);
+                //msg = msg.substring(0, i);
                 if (isLastRun) {
                     errors.add(new TestError()
                             .setAssertError(true)
@@ -218,7 +218,7 @@ public class SeleniumRunner {
                 if (i > 120) {
                     i = 120;
                 }
-                msg = msg.substring(0, i);
+                //msg = msg.substring(0, i);
                 System.err.println(msg);
                 ExceptionUtils.printRootCauseStackTrace(e);
                 if (isLastRun) {
