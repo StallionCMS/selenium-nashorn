@@ -48,7 +48,7 @@ public class SeleniumRunner {
                 suite.setBeforeSuite((JSObject) o.getMember(name));
                 continue;
             } else if ("afterSuite".equals(name)) {
-                suite.setBeforeSuite((JSObject) o.getMember(name));
+                suite.setAfterSuite((JSObject) o.getMember(name));
                 continue;
             } else if (!name.startsWith("test")) {
                 continue;
@@ -81,7 +81,7 @@ public class SeleniumRunner {
                             .setAssertError(true)
                             .setMsg(e.getMessage())
                             .setSuite(suite.getName())
-                            .setTest("afterSuite"));
+                            .setTest("beforeSuite"));
                     continue;
                 } else {
                     try {

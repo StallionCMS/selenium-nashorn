@@ -161,6 +161,7 @@ public class DriverHelper {
     }
 
     public void waitTextExists(String selector, String text) {
+        waitExists(selector);
         for(int x: range(defaultTimeout)) {
             if (driver.findElement(By.cssSelector(selector)).getText().contains(text)) {
                 return;
