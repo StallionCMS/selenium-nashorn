@@ -27,6 +27,10 @@ public class SeleniumRunner {
                 String[] parts = tests.split(":");
                 suiteName = parts[0];
                 testName = parts[1];
+            } else if (tests.contains(".")) {
+                int i = tests.lastIndexOf(".");
+                suiteName = tests.substring(0, i);
+                testName = tests.substring(i + 1);
             } else {
                 suiteName = tests;
             }
