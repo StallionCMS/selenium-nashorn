@@ -60,6 +60,7 @@ public class DriverHelper {
     }
 
     public boolean exists(String selector) {
+
         driver.manage().timeouts().implicitlyWait(1, TimeUnit.MILLISECONDS);
         try {
             List<WebElement> eles = driver.findElements(By.cssSelector(selector));
@@ -68,6 +69,21 @@ public class DriverHelper {
             } else {
                 return false;
             }
+        } finally {
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        }
+    }
+
+    public boolean isVisible(String selector) {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.MILLISECONDS);
+        try {
+            List<WebElement> eles = driver.findElements(By.cssSelector(selector));
+            if (eles.size() > 0) {
+                if (eles.get(0).isDisplayed()) {
+                    return true;
+                }
+            }
+            return false;
         } finally {
             driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
         }
